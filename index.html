@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>روح الصمود | لعبة الهروب من الصواريخ</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:#0a0e1a;color:#fff;font-family:"Segoe UI",Tahoma,Arial,sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 800px at 50% 10%, #1a2547 0%, #0a0e1a 60%)}
+  #frame{position:relative;width:min(100vw,56.25vh*1.2);width:min(100vw,480px);height:min(100dvh,900px);height:min(100dvh,177.7vw);max-height:100dvh;overflow:hidden;background:#000;border-radius:0;box-shadow:0 0 60px rgba(0,0,0,.6)}
+  @media(min-width:520px){#frame{border-radius:18px;border:1px solid #2a3560;height:min(92dvh,860px)}}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  .ui{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+  .card{pointer-events:auto;background:rgba(10,14,30,.82);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:26px 22px;max-width:88%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  h1{font-size:30px;line-height:1.3;margin-bottom:8px}
+  h1 .flag{font-size:26px}
+  p.sub{opacity:.85;font-size:15px;line-height:1.9;margin-bottom:14px}
+  .btn{pointer-events:auto;cursor:pointer;border:none;border-radius:14px;padding:14px 28px;font-size:19px;font-weight:800;color:#0a0e1a;background:linear-gradient(180deg,#fff,#cdd6ff);margin:6px;min-width:200px;box-shadow:0 8px 24px rgba(150,170,255,.35)}
+  .btn:active{transform:scale(.97)}
+  .btn.green{background:linear-gradient(180deg,#7dffb0,#1fbf6b);color:#06240f}
+  .btn.red{background:linear-gradient(180deg,#ffb3b3,#ef4444);color:#3a0505}
+  .hud{position:absolute;top:0;right:0;left:0;display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;pointer-events:none;font-weight:700;text-shadow:0 2px 8px #000}
+  .pill{background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.18);padding:6px 12px;border-radius:999px;font-size:14px}
+  #hint{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;font-size:13px;opacity:.75;pointer-events:none;text-shadow:0 2px 6px #000}
+  .controls{position:absolute;bottom:calc(46px + env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:space-between;padding:0 14px;pointer-events:none}
+  .tbtn{pointer-events:auto;width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);font-size:32px;color:#fff;backdrop-filter:blur(6px)}
+  .tbtn:active{background:rgba(255,255,255,.28)}
+  .hidden{display:none!important}
+  .soul-text{animation:soulfade 1s ease infinite alternate}
+  @keyframes soulfade{from{opacity:.7}to{opacity:1}}
+  small.peace{opacity:.6;font-size:12px;line-height:1.8;display:block;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="wrap">
+<div id="frame">
+<canvas id="game"></canvas>
+
+<div class="hud hidden" id="hud">
+  <div class="pill">⏱ <span id="time">0</span> ث</div>
+  <div class="pill">🫒 <span id="olive">0</span></div>
+  <div class="pill">🏆 <span id="best">0</span></div>
+</div>
+
+<div id="hint" class="hidden">اسحب بإصبعك يمين / يسار للهرب من الصواريخ</div>
+
+<div class="controls hidden" id="touchBtns">
+  <button class="tbtn" id="leftBtn">◀</button>
+  <button class="tbtn" id="rightBtn">▶</button>
+</div>
+
+<!-- القائمة -->
+<div class="ui" id="menu">
+  <div class="card">
+    <h1><span class="flag">🇵🇸</span><br>روح الصمود</h1>
+    <p class="sub">لعبة 2D للجوال والتابلت<br>اهرب من الصواريخ المتساقطة لأطول وقت ممكن…<br>اجمع الزيتون 🫒 واحذر الانفجارات 💥<br>وفي النهاية… روحك تصعد إلى السماء 🕊️</p>
+    <button class="btn green" id="startBtn">▶ ابدأ اللعب</button><br>
+    <button class="btn" id="howBtn">❓ طريقة اللعب</button>
+    <small class="peace">لعبة رمزية تدعو للسلام وحماية المدنيين — بدون عنف دموي.<br>الله يرحم الشهداء ويحفظ الأبرياء.</small>
+  </div>
+</div>
+
+<!-- شرح -->
+<div class="ui hidden" id="how">
+  <div class="card">
+    <h1 style="font-size:22px">طريقة اللعب 🎮</h1>
+    <p class="sub" style="text-align:right">
+    1️⃣ حرّك الشخص بصباعك (سحب) أو بالأسهم ◀ ▶<br>
+    2️⃣ علامة ⚠️ الحمراء = صاروخ قادم، اهرب بسرعة!<br>
+    3️⃣ اجمع 🫒 الزيتون لزيادة النقاط<br>
+    4️⃣ كل 10 ثواني الصواريخ تزيد وتسرع<br>
+    5️⃣ إذا أصابك صاروخ… تنفجر ثم تصعد روحك للسماء
+    </p>
+    <button class="btn green" id="backBtn">فهمت، ابدأ ▶</button>
+  </div>
+</div>
+
+<!-- موت / روح -->
+<div class="ui hidden" id="over">
+  <div class="card">
+    <h1 style="font-size:24px" class="soul-text">🕊️ صعدت روحك إلى السماء</h1>
+    <p class="sub" id="finalStats">صمدت 0 ثانية وجمعت 0 زيتونة</p>
+    <p class="sub" style="font-size:18px">﴿ وَلَا تَحْسَبَنَّ الَّذِينَ قُتِلُوا فِي سَبِيلِ اللَّهِ أَمْوَاتًا ﴾<br><span style="font-size:13px;opacity:.8">لعبة تذكارية — نسأل الله السلام لأهل فلسطين</span></p>
+    <button class="btn green" id="retryBtn">🔄 العب مجدداً</button><br>
+    <button class="btn" id="menuBtn">🏠 القائمة</button>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+(()=> {
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const menu = document.getElementById('menu');
+const how = document.getElementById('how');
+const over = document.getElementById('over');
+const hud = document.getElementById('hud');
+const hint = document.getElementById('hint');
+const tBtns = document.getElementById('touchBtns');
+const timeEl = document.getElementById('time');
+const oliveEl = document.getElementById('olive');
+const bestEl = document.getElementById('best');
+
+let W=480,H=800,DPR=1;
+function resize(){
+  const r = canvas.parentElement.getBoundingClientRect();
+  DPR = Math.min(2.5, window.devicePixelRatio||1);
+  W = 480; H = Math.round(480 * r.height / Math.max(1,r.width));
+  H = Math.max(700, Math.min(920, H));
+  canvas.width = W*DPR; canvas.height=H*DPR;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', resize); resize();
+
+// audio procedural
+let AC=null;
+function beep(f=440,d=0.12,type='sine',v=0.08){
+  try{
+    if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==='suspended') AC.resume();
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type=type;o.frequency.value=f;g.gain.value=v;
+    g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+d);
+    o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d);
+  }catch(e){}
+}
+function boomSound(){ beep(90,0.5,'sawtooth',0.18); setTimeout(()=>beep(45,0.6,'square',0.12),60); }
+function pickupSound(){ beep(880,0.1,'sine',0.09); setTimeout(()=>beep(1320,0.12,'sine',0.08),80); }
+function warnSound(){ beep(660,0.1,'square',0.05); }
+
+// state
+let state='menu';
+let player, missiles, particles, olives, warnings, smokes, doves;
+let time=0, oliveCount=0, spawnT=0, oliveT=0, shake=0, dieT=0, soulT=0, soul=null;
+let best = +(localStorage.getItem('rooh_best')||0);
+bestEl.textContent=best;
+let keys={left:false,right:false};
+let touchX=null, targetX=null;
+
+function reset(){
+  player={x:W/2,y:H-140,vx:0,w:44,h:64,run:0,face:1};
+  missiles=[];particles=[];olives=[];warnings=[];smokes=[];doves=[];
+  time=0;oliveCount=0;spawnT=0;oliveT=2;shake=0;dieT=0;soulT=0;soul=null;
+  timeEl.textContent='0';oliveEl.textContent='0';
+}
+reset();
+
+function startGame(){
+  reset();state='playing';
+  menu.classList.add('hidden');how.classList.add('hidden');over.classList.add('hidden');
+  hud.classList.remove('hidden');hint.classList.remove('hidden');tBtns.classList.remove('hidden');
+  setTimeout(()=>hint.classList.add('hidden'),5000);
+  try{AC&&AC.resume()}catch(e){}
+}
+document.getElementById('startBtn').onclick=()=>{beep(520,0.12);startGame()};
+document.getElementById('howBtn').onclick=()=>{menu.classList.add('hidden');how.classList.remove('hidden')};
+document.getElementById('backBtn').onclick=()=>startGame();
+document.getElementById('retryBtn').onclick=()=>startGame();
+document.getElementById('menuBtn').onclick=()=>{state='menu';over.classList.add('hidden');menu.classList.remove('hidden');hud.classList.add('hidden');tBtns.classList.add('hidden')};
+
+// input
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.left=true;
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=true;
+  if((e.key===' '||e.key==='Enter')&&state==='menu')startGame();
+  else if((e.key===' '||e.key==='Enter')&&state==='over')startGame();
+});
+window.addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.left=false;
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=false;
+});
+function canvasPos(t){const r=canvas.getBoundingClientRect();return (t.clientX-r.left)/r.width*W;}
+canvas.addEventListener('pointerdown',e=>{touchX=canvasPos(e);targetX=touchX;canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{if(touchX!==null){targetX=canvasPos(e)}});
+window.addEventListener('pointerup',()=>{touchX=null;targetX=null});
+const lb=document.getElementById('leftBtn'),rb=document.getElementById('rightBtn');
+lb.addEventListener('pointerdown',e=>{e.preventDefault();keys.left=true});
+lb.addEventListener('pointerup',()=>keys.left=false);
+lb.addEventListener('pointerleave',()=>keys.left=false);
+rb.addEventListener('pointerdown',e=>{e.preventDefault();keys.right=true});
+rb.addEventListener('pointerup',()=>keys.right=false);
+rb.addEventListener('pointerleave',()=>keys.right=false);
+
+function spawnMissile(){
+  const diff = 1 + time/18; // تصاعد
+  const x = 30+Math.random()*(W-60);
+  const speed = (260+Math.random()*180) * Math.min(2.6,diff*0.9+0.4);
+  const wob = Math.random()*60-30;
+  warnings.push({x,t:0.7});
+  warnSound();
+  setTimeout(()=>{
+    if(state!=='playing')return;
+    missiles.push({x,y:-60,vx:wob,vy:speed,r:14,trail:[],rot:Math.PI,spin:(Math.random()-0.5)*2});
+  },700);
+}
+function spawnOlive(){
+  olives.push({x:30+Math.random()*(W-60),y:-20,vy:140+Math.random()*80,ph:Math.random()*6});
+}
+function explode(x,y,big=true){
+  boomSound();shake=big?16:8;
+  const n=big?46:20;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,s=60+Math.random()*(big?420:220);
+    particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-120,life:0.6+Math.random()*0.8,t:0,
+      c:['#ffdd55','#ff9933','#ff4422','#888','#333'][Math.floor(Math.random()*5)],r:2+Math.random()*5});
+  }
+  for(let i=0;i<8;i++) smokes.push({x:x+(Math.random()-0.5)*30,y:y+(Math.random()-0.5)*20,vy:-40-Math.random()*40,vx:(Math.random()-0.5)*40,t:0,life:1.5,r:10+Math.random()*14});
+}
+
+function update(dt){
+  if(state==='playing'){
+    time+=dt;
+    timeEl.textContent=Math.floor(time);
+    if(Math.floor(time)>best){best=Math.floor(time);bestEl.textContent=best;localStorage.setItem('rooh_best',best)}
+    // لاعب
+    const sp=360;
+    if(keys.left){player.x-=sp*dt;player.face=-1}
+    if(keys.right){player.x+=sp*dt;player.face=1}
+    if(targetX!==null){const d=targetX-player.x;player.x+=Math.max(-sp*dt*1.4,Math.min(sp*dt*1.4,d*10*dt));if(Math.abs(d)>4)player.face=d>0?1:-1}
+    player.x=Math.max(26,Math.min(W-26,player.x));
+    player.run+=dt*(Math.abs(keys.left||keys.right||targetX!==null?10:4));
+
+    // صعوبة
+    const interval=Math.max(0.22,0.95-time*0.022);
+    spawnT-=dt;
+    if(spawnT<=0){spawnMissile();if(time>12)spawnMissile();if(time>30&&Math.random()<0.5)spawnMissile();spawnT=interval*(0.7+Math.random()*0.6)}
+    oliveT-=dt;if(oliveT<=0){spawnOlive();oliveT=2.5+Math.random()*3}
+
+    // تحذيرات
+    for(const w of warnings)w.t-=dt;
+    warnings=warnings.filter(w=>w.t>0);
+
+    // صواريخ
+    for(const m of missiles){
+      m.y+=m.vy*dt;m.x+=m.vx*dt+Math.sin(time*4+m.y*0.02)*20*dt;
+      m.rot+=m.spin*dt;
+      m.trail.push({x:m.x,y:m.y});if(m.trail.length>12)m.trail.shift();
+      // اصطدام بالأرض
+      if(m.y>H-70){explode(m.x,H-70,false);m.dead=true;continue}
+      // اصطدام باللاعب
+      const dx=m.x-player.x,dy=m.y-(player.y-20);
+      if(Math.hypot(dx,dy)<30){
+        m.dead=true;die();
+        break;
+      }
+    }
+    missiles=missiles.filter(m=>!m.dead&&m.y<H+80);
+
+    // زيتون
+    for(const o of olives){
+      o.y+=o.vy*dt;o.ph+=dt*4;
+      if(Math.hypot(o.x-player.x,o.y-(player.y-20))<34){o.dead=true;oliveCount++;oliveEl.textContent=oliveCount;pickupSound();
+        for(let i=0;i<10;i++)particles.push({x:o.x,y:o.y,vx:(Math.random()-0.5)*200,vy:-100-Math.random()*150,t:0,life:0.5,c:'#7dff9a',r:3});}
+      if(o.y>H+30)o.dead=true;
+    }
+    olives=olives.filter(o=>!o.dead);
+
+  } else if(state==='dying'){
+    dieT-=dt;
+    if(dieT<=0){
+      state='soul';soulT=4.2;
+      soul={x:player.x,y:player.y-20,vy:-90};
+      for(let i=0;i<5;i++)doves.push({x:player.x+(Math.random()-0.5)*120,y:H*0.5+Math.random()*150,vx:(Math.random()-0.5)*40,ph:Math.random()*6});
+      beep(523,0.5,'sine',0.1);setTimeout(()=>beep(659,0.5,'sine',0.1),300);setTimeout(()=>beep(784,0.9,'sine',0.1),600);
+    }
+  } else if(state==='soul'){
+    soulT-=dt;soul.y+=soul.vy*dt;soul.vy-=8*dt;
+    for(const d of doves){d.ph+=dt*6;d.x+=d.vx*dt+Math.sin(d.ph)*20*dt;d.y-=20*dt}
+    if(soulT<=0){
+      state='over';
+      document.getElementById('finalStats').textContent=`صمدت ${Math.floor(time)} ثانية وجمعت ${oliveCount} زيتونة 🫒 — أفضل رقم: ${best}`;
+      over.classList.remove('hidden');hud.classList.add('hidden');tBtns.classList.add('hidden');
+    }
+  }
+  // جزيئات دائما
+  for(const p of particles){p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=500*dt;p.vx*=0.98}
+  particles=particles.filter(p=>p.t<p.life);
+  for(const s of smokes){s.t+=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.r+=12*dt}
+  smokes=smokes.filter(s=>s.t<s.life);
+  if(shake>0)shake=Math.max(0,shake-dt*30);
+}
+
+function die(){
+  if(state!=='playing')return;
+  state='dying';dieT=1.4;
+  explode(player.x,player.y-20,true);
+}
+
+function drawCity(){
+  // سماء ليل + نجوم
+  const g=ctx.createLinearGradient(0,0,0,H);
+  if(state==='soul'){g.addColorStop(0,'#bfe9ff');g.addColorStop(0.5,'#7aa8ff');g.addColorStop(1,'#2b2f6b')}
+  else{g.addColorStop(0,'#060a1c');g.addColorStop(0.6,'#131c3d');g.addColorStop(1,'#3a2a2a')}
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // نجوم / نور
+  ctx.fillStyle='rgba(255,255,255,.8)';
+  if(state!=='soul'){for(let i=0;i<70;i++){const x=(i*97)%W,y=(i*57)%(H*0.55);ctx.globalAlpha=0.3+0.5*Math.abs(Math.sin(time*2+i));ctx.fillRect(x,y,2,2)}ctx.globalAlpha=1;}
+  // قمر
+  ctx.fillStyle='#f5f3ce';ctx.beginPath();ctx.arc(W-70,90,28,0,7);ctx.fill();
+  ctx.fillStyle='rgba(245,243,206,.25)';ctx.beginPath();ctx.arc(W-70,90,44,0,7);ctx.fill();
+  // مباني مدمرة (سيلويت)
+  ctx.fillStyle=state==='soul'?'rgba(60,80,160,.5)':'#0b0f22';
+  const bh=[120,180,140,210,160,190,130,175];
+  let bx=0;for(let i=0;i<8;i++){const w=W/8;const h=bh[i% bh.length];ctx.fillRect(bx,H-70-h,w-4,h);
+    // نوافذ مضيئة قليلة
+    ctx.fillStyle='rgba(255,200,80,.35)';
+    for(let wy=H-70-h+12;wy<H-90;wy+=22)for(let wx=bx+6;wx<bx+w-12;wx+=14)if((wx+wy+i)%5===0)ctx.fillRect(wx,wy,5,7);
+    ctx.fillStyle=state==='soul'?'rgba(60,80,160,.5)':'#0b0f22';
+    bx+=w;}
+  // نار مشتعلة على بعض المباني أثناء اللعب
+  if(state==='playing'||state==='dying'){
+    for(let i=0;i<3;i++){const fx=((i*197+Math.floor(time*2)*3)%W);const fy=H-70-bh[i*3%bh.length];
+      ctx.fillStyle=`rgba(255,${120+Math.floor(Math.random()*80)},20,.85)`;
+      ctx.beginPath();ctx.arc(fx,fy+Math.random()*6,6+Math.random()*6,0,7);ctx.fill();}
+  }
+  // أرض
+  ctx.fillStyle=state==='soul'?'#9fd49a':'#1e2416';ctx.fillRect(0,H-70,W,70);
+  ctx.fillStyle=state==='soul'?'#7cc47a':'#2e3a22';ctx.fillRect(0,H-70,W,6);
+}
+
+function drawPlayer(){
+  if(state==='dying'||state==='soul'&&soulT<3.4){/* مخفي بعد الانفجار، الروح فقط */}
+  else if(state==='soul'){/* */ }
+  else{
+    const p=player,bob=Math.sin(p.run*6)*3;
+    ctx.save();ctx.translate(p.x,p.y+bob*0.3);
+    // ظل
+    ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(0,4,20,7,0,0,7);ctx.fill();
+    // أرجل تركض
+    const l=Math.sin(p.run*10)*10;
+    ctx.strokeStyle='#2b2b2b';ctx.lineWidth=9;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(0,-22);ctx.lineTo(-8+l*0.6,0);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,-22);ctx.lineTo(8-l*0.6,0);ctx.stroke();
+    // جسم
+    ctx.fillStyle='#2f7a3d';ctx.fillRect(-13,-48,26,28);
+    // شماغ
+    ctx.fillStyle='#f2ede0';ctx.beginPath();ctx.arc(0,-56,15,0,7);ctx.fill();
+    ctx.fillStyle='#111';ctx.fillRect(-9,-60,18,4); // عقال
+    ctx.fillStyle='#c62828';ctx.font='8px sans-serif';ctx.fillText('🇵🇸',-8,-44);
+    // عيون اتجاه
+    ctx.fillStyle='#111';ctx.beginPath();ctx.arc(p.face*5,-56,2,0,7);ctx.fill();
+    ctx.restore();
+  }
+}
+function drawMissiles(){
+  for(const w of warnings){
+    ctx.fillStyle=`rgba(255,40,40,${0.5+0.4*Math.sin(performance.now()/90)})`;
+    ctx.font='bold 16px sans-serif';ctx.textAlign='center';
+    ctx.fillText('⚠️',w.x,70);
+    ctx.strokeStyle='rgba(255,40,40,.7)';ctx.setLineDash([6,6]);ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(w.x,84);ctx.lineTo(w.x,H-80);ctx.stroke();ctx.setLineDash([]);
+  }
+  for(const m of missiles){
+    // ذيل ناري
+    for(let i=0;i<m.trail.length;i++){const t=m.trail[i];ctx.globalAlpha=i/m.trail.length*0.6;ctx.fillStyle='#ffaa22';ctx.beginPath();ctx.arc(t.x,t.y-14,6*(i/m.trail.length)+2,0,7);ctx.fill()}ctx.globalAlpha=1;
+    ctx.save();ctx.translate(m.x,m.y);ctx.rotate(Math.atan2(m.vy,m.vx)-Math.PI/2+Math.sin(time*5)*0.05);
+    // جسم صاروخ
+    ctx.fillStyle='#c0c7d1';ctx.beginPath();ctx.moveTo(0,-22);ctx.lineTo(8,-8);ctx.lineTo(8,14);ctx.lineTo(-8,14);ctx.lineTo(-8,-8);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#ef4444';ctx.beginPath();ctx.moveTo(0,-22);ctx.lineTo(8,-8);ctx.lineTo(-8,-8);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#ffcc00';ctx.fillRect(-8,10,16,6);
+    // لهب
+    ctx.fillStyle='#ffdd33';ctx.beginPath();ctx.moveTo(-6,16);ctx.lineTo(0,30+Math.random()*10);ctx.lineTo(6,16);ctx.closePath();ctx.fill();
+    ctx.restore();
+  }
+}
+function drawOlives(){
+  for(const o of olives){
+    ctx.save();ctx.translate(o.x,o.y+Math.sin(o.ph)*4);
+    ctx.fillStyle='#1fbf6b';ctx.beginPath();ctx.arc(0,0,12,0,7);ctx.fill();
+    ctx.fillStyle='#7dff9a';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🫒',0,1);
+    ctx.restore();
+  }
+}
+function drawFx(){
+  for(const s of smokes){ctx.globalAlpha=Math.max(0,0.5-s.t/s.life);ctx.fillStyle='#555';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,7);ctx.fill()}ctx.globalAlpha=1;
+  for(const p of particles){ctx.globalAlpha=Math.max(0,1-p.t/p.life);ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill()}ctx.globalAlpha=1;
+}
+function drawSoul(){
+  if(state!=='soul'||!soul)return;
+  const a=Math.min(1,(4.2-soulT)*1.2);
+  // شعاع نور
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(255,255,255,.9)');g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.globalAlpha=0.55*a;ctx.fillStyle=g;ctx.fillRect(soul.x-50,0,100,soul.y+40);ctx.globalAlpha=1;
+  // روح شفافة طائرة
+  ctx.save();ctx.translate(soul.x,soul.y);ctx.globalAlpha=0.92;
+  ctx.shadowColor='#fff';ctx.shadowBlur=30;
+  ctx.fillStyle='rgba(255,255,255,.95)';
+  ctx.beginPath();ctx.arc(0,-18,14,0,7);ctx.fill(); // رأس
+  ctx.beginPath();ctx.moveTo(-14,-6);ctx.quadraticCurveTo(0,-14,14,-6);ctx.lineTo(8,22);ctx.quadraticCurveTo(0,28,-8,22);ctx.closePath();ctx.fill();
+  // أجنحة
+  const w=Math.sin(performance.now()/180)*8;
+  ctx.fillStyle='rgba(255,255,255,.85)';
+  ctx.beginPath();ctx.ellipse(-20,-4,14,6,-0.4+w*0.02,0,7);ctx.fill();
+  ctx.beginPath();ctx.ellipse(20,-4,14,6,0.4-w*0.02,0,7);ctx.fill();
+  ctx.restore();ctx.shadowBlur=0;
+  // حمامات
+  ctx.font='22px sans-serif';ctx.textAlign='center';
+  for(const d of doves){ctx.globalAlpha=0.9;ctx.fillText('🕊️',d.x+Math.sin(d.ph)*10,d.y)}
+  ctx.globalAlpha=1;
+  // نص
+  ctx.fillStyle='#0a2140';ctx.font='bold 24px Tahoma';ctx.textAlign='center';
+  ctx.fillText('روحك تصعد إلى السماء…',W/2,150);
+  ctx.font='16px Tahoma';ctx.fillText('🕊️ السلام لروحك 🕊️',W/2,180);
+}
+
+function loop(t){
+  requestAnimationFrame(loop);
+  if(!loop.last)loop.last=t;
+  let dt=(t-loop.last)/1000;loop.last=t;
+  dt=Math.min(0.033,dt);
+  if(state!=='menu')update(dt);
+  ctx.save();
+  if(shake>0)ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);
+  drawCity();drawOlives();drawMissiles();drawPlayer();drawFx();drawSoul();
+  // عداد أثناء الموت
+  if(state==='dying'){
+    ctx.fillStyle='rgba(255,80,40,.9)';ctx.font='bold 28px Tahoma';ctx.textAlign='center';
+    ctx.fillText('💥',player.x,player.y-80);
+  }
+  ctx.restore();
+  // HUD وقت اللعب فقط
+  if(state==='playing'){
+    // ظل تحذير سفلي عند قرب صاروخ
+    for(const m of missiles){if(m.y>H-250){ctx.fillStyle='rgba(255,0,0,.12)';ctx.fillRect(0,H-90,W,90);break}}
+  }
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
