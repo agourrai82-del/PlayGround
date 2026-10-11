@@ -1,0 +1,1 @@
+{"name":"playground-space-cube-3d","version":"1.0.0","private":true,"description":"PlayGround 3D space-cube dodger: desktop + phone/tablet touch game, static dist output.","scripts":{"build":"node scripts/build.mjs"}}

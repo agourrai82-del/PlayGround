@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>PlayGround — مكعب الفضاء 3D | Space Cube 3D</title>
+<meta name="description" content="3D space-cube dodger. Play on desktop, phone and tablet. Touch + keyboard." />
+<style>
+  :root{
+    --bg:#070b18; --panel:#0e1530cc; --accent:#38e1ff; --accent2:#ff4fd8;
+    --gold:#ffd84f; --text:#eef4ff; --muted:#9fb0d0;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;color:var(--text);font-family:system-ui,"Segoe UI",Tahoma,Arial,sans-serif;
+    background:radial-gradient(1200px 700px at 50% -10%,#1b2a63 0%,var(--bg) 55%) fixed,var(--bg);
+    overflow-x:hidden;min-height:100dvh;display:flex;flex-direction:column;
+  }
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 18px;max-width:1100px;width:100%;margin:0 auto;
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{
+    width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:24px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    box-shadow:0 6px 24px #38e1ff55;flex:none;
+  }
+  .brand h1{font-size:18px;margin:0;line-height:1.2}
+  .brand small{color:var(--muted);font-size:12px}
+  .badge{
+    font-size:12px;color:#06121f;background:var(--gold);border-radius:999px;
+    padding:6px 12px;font-weight:800;white-space:nowrap;
+  }
+  main{width:100%;max-width:1100px;margin:0 auto;padding:0 16px 28px;flex:1;
+    display:grid;grid-template-columns:1.35fr .85fr;gap:16px;align-items:start}
+  @media (max-width:860px){main{grid-template-columns:1fr}}
+  .stage{
+    background:linear-gradient(180deg,#0b1230,#070b18);border:1px solid #ffffff1c;
+    border-radius:18px;overflow:hidden;box-shadow:0 18px 60px #00000066;
+  }
+  .hud{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;
+    background:#0a1028;border-bottom:1px solid #ffffff14;font-size:14px}
+  .hud .pill{background:#ffffff10;border:1px solid #ffffff1c;border-radius:999px;padding:5px 12px;
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+  .hud b{color:var(--gold)}
+  .canvas-wrap{position:relative;touch-action:none}
+  canvas{width:100%;height:min(62vw,520px);min-height:340px;display:block;touch-action:none;
+    background:#05081a;cursor:crosshair}
+  .overlay{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;text-align:center;padding:20px;background:linear-gradient(180deg,#05081acc,#05081a66);
+  }
+  .overlay[hidden]{display:none}
+  .overlay h2{margin:0;font-size:clamp(22px,4vw,34px)}
+  .overlay p{margin:0;color:var(--muted);max-width:46ch;font-size:14px;line-height:1.8}
+  .btn{
+    appearance:none;border:0;border-radius:14px;padding:14px 26px;font-size:17px;font-weight:900;
+    color:#06121f;background:linear-gradient(135deg,var(--accent),#7dffb2);cursor:pointer;
+    box-shadow:0 10px 30px #38e1ff44;min-height:52px;min-width:min(280px,80%);
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.secondary{background:#ffffff14;color:var(--text);border:1px solid #ffffff2c;box-shadow:none;
+    font-size:14px;padding:10px 18px;min-width:0;min-height:44px}
+  .touch-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+  .touch-controls button{
+    border-radius:14px;border:1px solid #ffffff2c;background:#ffffff0d;color:var(--text);
+    font-size:22px;font-weight:900;padding:14px;min-height:58px;touch-action:none;user-select:none;
+  }
+  .touch-controls button:active{background:#38e1ff33}
+  .touch-hint{font-size:12px;color:var(--muted);text-align:center;padding:0 12px 12px}
+  aside.panel{
+    background:var(--panel);border:1px solid #ffffff1c;border-radius:18px;padding:16px;
+    backdrop-filter:blur(8px);line-height:1.9;font-size:14px;
+  }
+  aside.panel h3{margin:0 0 6px;font-size:16px}
+  aside.panel ul{margin:8px 0;padding-inline-start:20px;color:#d6e2ff}
+  kbd{background:#ffffff14;border:1px solid #ffffff2c;border-bottom-width:2px;border-radius:6px;
+    padding:0 7px;font-size:12px;font-family:inherit}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .stat{display:flex;gap:8px;align-items:center;background:#ffffff0a;border:1px solid #ffffff16;
+    border-radius:12px;padding:8px 12px;font-size:13px}
+  footer{color:var(--muted);font-size:12px;text-align:center;padding:14px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo" aria-hidden="true">🎮</div>
+    <div>
+      <h1>مكعب الفضاء 3D — Space Cube Dodger</h1>
+      <small>Desktop • Phone • Tablet —Touch + Keyboard — No install</small>
+    </div>
+  </div>
+  <div class="badge">3D • Touch ready</div>
+</header>
+
+<main>
+  <section class="stage" aria-label="game stage">
+    <div class="hud">
+      <span class="pill">⭐ Score <b id="score">0</b></span>
+      <span class="pill">🏆 Best <b id="best">0</b></span>
+      <span class="pill">🚀 Speed <b id="speed">1.0x</b></span>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="game" width="900" height="560" aria-label="3D space tunnel game"></canvas>
+      <div class="overlay" id="menu">
+        <h2>🛸 اهرب من المكعبات!</h2>
+        <p>Dodge the incoming 3D cubes. Drag on the screen, use the ◀ ▶ buttons, or arrow keys.
+        <br/>اسحب بإصبعك على الشاشة أو استخدم الأسهم. اضغط زر البدء للعب.</p>
+        <button class="btn" id="startBtn" aria-label="Start Game">▶ ابدأ اللعب • Start</button>
+        <button class="btn secondary" id="howBtn">طريقة اللعب / How to play</button>
+      </div>
+      <div class="overlay" id="over" hidden>
+        <h2>💥 Game Over</h2>
+        <p id="finalLine">Score 0</p>
+        <button class="btn" id="againBtn" aria-label="Play Again">🔁 العب مجدداً • Again</button>
+      </div>
+    </div>
+    <div class="touch-controls" aria-label="touch controls">
+      <button id="leftBtn" aria-label="move left">◀</button>
+      <button id="rightBtn" aria-label="move right">▶</button>
+    </div>
+    <div class="touch-hint">📱 على الجوال: اسحب داخل اللعبة أو اضغط ◀ ▶ — On phone: drag or tap the buttons</div>
+  </section>
+
+  <aside class="panel">
+    <h3>🎯 كيف تلعب؟ / How to play</h3>
+    <ul id="howList">
+      <li><kbd>◀</kbd> <kbd>▶</kbd> أو <kbd>A</kbd> <kbd>D</kbd> للحركة — move the ship</li>
+      <li>📱 اسحب بإصبع واحد داخل اللعبة — drag with one finger</li>
+      <li>⏸️ <kbd>Space</kbd> للإيقاف المؤقت — pause</li>
+      <li>كلما طالت مدة البقاء، زادت السرعة والنقاط!</li>
+    </ul>
+    <div class="row">
+      <span class="stat">🖥️ Desktop 1440px OK</span>
+      <span class="stat">📱 Mobile 390px OK</span>
+      <span class="stat">⚡ 60fps canvas 3D</span>
+    </div>
+    <div class="row">
+      <button class="btn secondary" id="pauseBtn">⏸ Pause</button>
+      <button class="btn secondary" id="soundBtn">🔊 Sound: on</button>
+    </div>
+    <p style="color:var(--muted);font-size:12px">نعم — نصنع ألعاب 3D تعمل على الجوال والتابلت وسطح المكتب.
+    Yes — this page is a playable 3D-style game for phone, tablet and desktop, built with pure Canvas (no downloads).</p>
+  </aside>
+</main>
+
+<footer>PlayGround • Space Cube 3D • pure HTML/CSS/JS • works offline once loaded</footer>
+
+<script>
+"use strict";
+(() => {
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const scoreEl = document.getElementById("score");
+  const bestEl = document.getElementById("best");
+  const speedEl = document.getElementById("speed");
+  const menu = document.getElementById("menu");
+  const over = document.getElementById("over");
+  const finalLine = document.getElementById("finalLine");
+  const startBtn = document.getElementById("startBtn");
+  const againBtn = document.getElementById("againBtn");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const soundBtn = document.getElementById("soundBtn");
+  const howBtn = document.getElementById("howBtn");
+  const howList = document.getElementById("howList");
+
+  // Fit canvas backing store to displayed size (crisp on phone/desktop).
+  function fit() {
+    const r = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(320, Math.round(r.width * dpr));
+    const h = Math.max(300, Math.round((r.width * 0.62) * dpr));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  }
+  window.addEventListener("resize", fit);
+  fit();
+
+  const S = {
+    running:false, paused:false, t:0, score:0,
+    best:Number(localStorage.getItem("cube3d-best")||0),
+    speed:1, player:0, // -1..1
+    keys:{left:false,right:false},
+    obstacles:[], stars:[], laneFlash:0, sound:true,
+    shake:0, hue:195
+  };
+  bestEl.textContent = S.best;
+
+  for (let i=0;i<140;i++) S.stars.push({x:Math.random()*2-1,y:Math.random()*2-1,z:Math.random()});
+
+  function beep(f,dur,type){
+    if(!S.sound) return;
+    try{
+      const AC = window.AudioContext||window.webkitAudioContext;
+      if(!AC) return;
+      beep.ctx = beep.ctx || new AC();
+      const c = beep.ctx, o=c.createOscillator(), g=c.createGain();
+      o.type=type||"square"; o.frequency.value=f;
+      g.gain.setValueAtTime(0.06,c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+dur);
+      o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+dur);
+    }catch(e){}
+  }
+
+  function project(x,y,z,W,H){
+    // Simple perspective: camera at (0,0,-1) looking +z.
+    const f = H*0.9;
+    const zz = Math.max(0.05, z+1.0);
+    return { x: W/2 + (x*W*0.5)*(f/zz)/ (W*0.5) * (W*0.28)/ (f/zz) * (zz) , sx:0 };
+  }
+  // Clearer projection used below:
+  function proj(nx, ny, z, W, H){
+    const cam = 1.1;
+    const s = (H*0.75)/(z+cam);
+    return { x: W/2 + nx*s*1.6, y: H*0.34 + ny*s, s };
+  }
+
+  function spawnRow(){
+    const lanes = [-0.75,-0.38,0,0.38,0.75];
+    // Leave at least one free lane.
+    const free = Math.floor(Math.random()*lanes.length);
+    const gap = S.score>400 ? 1 : 2;
+    lanes.forEach((L,i)=>{
+      if(i===free) return;
+      if(Math.abs(i-free)<gap && Math.random()<0.55) return;
+      if(Math.random()<0.62) S.obstacles.push({lane:L,z:7+Math.random()*2,size:0.16+Math.random()*0.10,spin:Math.random()*6.28,sp:0.5+Math.random()*0.8, hue:180+Math.random()*140});
+    });
+  }
+
+  function reset(){
+    S.t=0; S.score=0; S.speed=1; S.player=0; S.obstacles.length=0; S.shake=0;
+    scoreEl.textContent="0"; speedEl.textContent="1.0x";
+  }
+  function start(){
+    reset(); S.running=true; S.paused=false;
+    menu.hidden=true; over.hidden=true;
+    pauseBtn.textContent="⏸ Pause";
+    beep(440,0.12,"square"); setTimeout(()=>beep(660,0.14,"square"),110);
+  }
+  function gameOver(){
+    S.running=false; S.shake=14;
+    beep(160,0.4,"sawtooth");
+    if(S.score>S.best){S.best=Math.floor(S.score);localStorage.setItem("cube3d-best",S.best);}
+    bestEl.textContent=S.best;
+    finalLine.textContent = "النتيجة: "+Math.floor(S.score)+" • Best: "+S.best;
+    setTimeout(()=>{over.hidden=false;},450);
+  }
+
+  startBtn.addEventListener("click",start);
+  againBtn.addEventListener("click",start);
+  howBtn.addEventListener("click",()=>{howList.scrollIntoView({behavior:"smooth",block:"center"});beep(520,0.08);});
+  pauseBtn.addEventListener("click",()=>{
+    if(!S.running) return;
+    S.paused=!S.paused;
+    pauseBtn.textContent=S.paused?"▶ Resume":"⏸ Pause";
+  });
+  soundBtn.addEventListener("click",()=>{
+    S.sound=!S.sound;
+    soundBtn.textContent=S.sound?"🔊 Sound: on":"🔇 Sound: off";
+  });
+  window.addEventListener("keydown",e=>{
+    if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A")S.keys.left=true;
+    if(e.key==="ArrowRight"||e.key==="d"||e.key==="D")S.keys.right=true;
+    if(e.key===" "){e.preventDefault();pauseBtn.click();}
+    if(e.key==="Enter"&&!S.running)start();
+  });
+  window.addEventListener("keyup",e=>{
+    if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A")S.keys.left=false;
+    if(e.key==="ArrowRight"||e.key==="d"||e.key==="D")S.keys.right=false;
+  });
+
+  // Touch + mouse drag steering.
+  let dragging=false,lastX=0;
+  function xToPlayer(clientX){
+    const r=canvas.getBoundingClientRect();
+    const nx=((clientX-r.left)/r.width)*2-1; // -1..1
+    S.player=Math.max(-1,Math.min(1,nx*1.15));
+  }
+  canvas.addEventListener("pointerdown",e=>{dragging=true;lastX=e.clientX;xToPlayer(e.clientX);canvas.setPointerCapture(e.pointerId);});
+  canvas.addEventListener("pointermove",e=>{if(dragging)xToPlayer(e.clientX);});
+  window.addEventListener("pointerup",()=>dragging=false);
+
+  function hold(btn,dir){
+    let iv=null;
+    const on=e=>{e.preventDefault();S.keys[dir]=true;};
+    const off=()=>{S.keys[dir]=false;};
+    btn.addEventListener("pointerdown",on);
+    btn.addEventListener("pointerup",off);
+    btn.addEventListener("pointerleave",off);
+    btn.addEventListener("pointercancel",off);
+  }
+  hold(document.getElementById("leftBtn"),"left");
+  hold(document.getElementById("rightBtn"),"right");
+
+  function drawCube(cx,cy,half,rot,hue,fill){
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(rot*0.15);
+    const g=ctx.createLinearGradient(-half,-half,half,half);
+    g.addColorStop(0,`hsl(${hue},95%,68%)`);
+    g.addColorStop(1,`hsl(${(hue+60)%360},90%,42%)`);
+    ctx.fillStyle=fill||g;
+    ctx.strokeStyle="rgba(255,255,255,.85)";ctx.lineWidth=Math.max(1,half*0.07);
+    const r=half*0.22;
+    ctx.beginPath();
+    ctx.roundRect(-half,-half,half*2,half*2,r);
+    ctx.fill();ctx.stroke();
+    // 3D top face illusion
+    ctx.fillStyle="rgba(255,255,255,.28)";
+    ctx.beginPath();
+    ctx.moveTo(-half,-half+r);
+    ctx.lineTo(-half+half*0.35,-half-half*0.42);
+    ctx.lineTo(half+half*0.35,-half-half*0.42);
+    ctx.lineTo(half,-half+r);
+    ctx.closePath();ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.9)";
+    ctx.fillRect(-half*0.5,-half*0.12,half,half*0.2);
+    ctx.restore();
+  }
+
+  let last=performance.now(), spawnT=0;
+  function frame(now){
+    requestAnimationFrame(frame);
+    fit();
+    const W=canvas.width,H=canvas.height;
+    let dt=Math.min(0.05,(now-last)/1000);last=now;
+    if(S.paused) dt=0;
+    S.t+=dt;
+
+    // shake
+    ctx.save();
+    if(S.shake>0&&dt>0){S.shake-=dt*30;ctx.translate((Math.random()-0.5)*S.shake,(Math.random()-0.5)*S.shake);}
+
+    // bg
+    const bg=ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,"#0a1440");bg.addColorStop(0.45,"#070b22");bg.addColorStop(1,"#040614");
+    ctx.fillStyle=bg;ctx.fillRect(-20,-20,W+40,H+40);
+
+    // stars (always animate = attract mode)
+    for(const st of S.stars){
+      st.z-=dt*(0.6+S.speed*0.5);
+      if(st.z<=0){st.z=1;st.x=Math.random()*2-1;st.y=Math.random()*2-1;}
+      const p=proj(st.x*1.4,st.y*0.9,st.z*4,W,H);
+      const a=1-st.z;
+      ctx.fillStyle=`rgba(255,255,255,${(0.25+a*0.75).toFixed(2)})`;
+      const r=Math.max(0.6,(1-st.z)*2.4*(W/900));
+      ctx.fillRect(p.x,p.y,r,r);
+    }
+
+    // tunnel grid floor
+    ctx.strokeStyle="rgba(56,225,255,.28)";ctx.lineWidth=1;
+    const horizon=H*0.34;
+    for(let i=0;i<=12;i++){
+      const nx=(i/12)*2-1;
+      const a=proj(nx*1.2,0.75,0.2,W,H), b=proj(nx*2.2,1.35,7,W,H);
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    }
+    for(let k=0;k<9;k++){
+      const z=((k/9)*7+S.t*2.2*(S.running?S.speed:0.6))%7;
+      const p=proj(0,0.75+k*0.075,z,W,H);
+      ctx.globalAlpha=0.10+0.5*(1-z/7);
+      ctx.beginPath();ctx.ellipse(W/2,p.y,W*(0.10+ (1-z/7)*0.42),(4+(1-z/7)*16)*(H/560),0,0,6.29);ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+
+    if(S.running&&!S.paused){
+      // steering
+      const steer=4.2*dt;
+      if(S.keys.left)S.player-=steer;
+      if(S.keys.right)S.player+=steer;
+      S.player=Math.max(-1,Math.min(1,S.player));
+      S.speed=1+S.score/900;
+      S.score+=dt*60*S.speed;
+      scoreEl.textContent=Math.floor(S.score);
+      speedEl.textContent=S.speed.toFixed(1)+"x";
+      spawnT-=dt;
+      if(spawnT<=0){spawnRow();spawnT=Math.max(0.42,1.05-S.score/1400);}
+    }
+
+    // obstacles
+    const px=S.player;
+    for(let i=S.obstacles.length-1;i>=0;i--){
+      const o=S.obstacles[i];
+      if(S.running&&!S.paused){o.z-=dt*(2.6*S.speed*o.sp+1.2);o.spin+=dt*2;}
+      if(o.z<-0.6){S.obstacles.splice(i,1);continue;}
+      const p=proj(o.lane,0.62,o.z,W,H);
+      const half=o.size*p.s*1.15;
+      drawCube(p.x,p.y,half,o.spin,o.hue);
+      // collision near player plane
+      if(S.running&&o.z<0.55&&o.z>-0.1){
+        const playerX=W/2+px*W*0.30;
+        if(Math.abs(p.x-playerX)<half+W*0.035){gameOver();break;}
+      }
+    }
+
+    // player ship (3D cube + glow)
+    const ppx=W/2+px*W*0.30, ppy=H*0.86;
+    const glow=ctx.createRadialGradient(ppx,ppy,4,ppx,ppy,70*(W/900));
+    glow.addColorStop(0,"rgba(56,225,255,.5)");glow.addColorStop(1,"rgba(56,225,255,0)");
+    ctx.fillStyle=glow;ctx.fillRect(ppx-80,ppy-80,160,160);
+    drawCube(ppx,ppy,Math.max(14,W*0.028)+Math.sin(S.t*6)*1.5,Math.sin(S.t*2)*0.4,S.hue=(S.hue+dt*8)%360);
+
+    // vignette
+    const v=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.85);
+    v.addColorStop(0,"rgba(0,0,0,0)");v.addColorStop(1,"rgba(0,0,0,.5)");
+    ctx.fillStyle=v;ctx.fillRect(0,0,W,H);
+    ctx.restore();
+
+    if(!S.running&&over.hidden){
+      // attract-mode hint bar
+      ctx.fillStyle="rgba(255,255,255,.75)";
+      ctx.font=`${Math.round(H*0.032)}px system-ui`;
+      ctx.textAlign="center";
+      ctx.fillText("touch • drag • ◀ ▶ • space = pause",W/2,H-14);
+    }
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

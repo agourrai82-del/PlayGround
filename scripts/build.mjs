@@ -1,0 +1,10 @@
+import { cpSync, mkdirSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const src = join(root, 'public');
+const out = join(root, 'dist');
+if (!existsSync(join(src, 'index.html'))) throw new Error('public/index.html missing');
+mkdirSync(out, { recursive: true });
+cpSync(src, out, { recursive: true });
+console.log(`built ${out}`);
