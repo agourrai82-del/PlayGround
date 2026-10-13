@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<title>🔥 سيارات العناصر 3D | نار 💧 ماء 🪨 أرض 🌪️ هواء</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#070b18; font-family:'Segoe UI',Tahoma,Arial,sans-serif; touch-action:none; user-select:none; -webkit-user-select:none; }
+  #game-canvas { position:fixed; inset:0; display:block; }
+  /* ---------- Screens ---------- */
+  .screen { position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:18px; text-align:center; }
+  #menu { background:radial-gradient(ellipse at 50% 20%, #1a2b5c 0%, #070b18 65%); overflow-y:auto; }
+  #menu h1 { font-size:clamp(26px,6vw,52px); color:#fff; text-shadow:0 0 24px #ff6a00,0 0 60px #3b82f6; margin-bottom:6px; }
+  #menu p.sub { color:#aeb9d6; font-size:clamp(13px,3.4vw,17px); margin-bottom:14px; }
+  #cars-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; width:min(560px,94vw); margin-bottom:14px; }
+  @media(min-width:700px){ #cars-grid{grid-template-columns:repeat(4,1fr); width:min(760px,94vw);} }
+  .car-card { border-radius:18px; padding:14px 10px; cursor:pointer; border:3px solid transparent; background:rgba(255,255,255,.06); backdrop-filter:blur(8px); transition:transform .15s, border-color .15s, box-shadow .15s; color:#fff; }
+  .car-card:active{ transform:scale(.96); }
+  .car-card.selected{ transform:scale(1.05); }
+  .car-card .emoji{ font-size:42px; line-height:1; }
+  .car-card h3{ margin:8px 0 4px; font-size:18px; }
+  .car-card small{ color:#cbd5e1; font-size:12.5px; line-height:1.6; display:block; min-height:40px; }
+  .car-card .power{ margin-top:8px; font-size:12px; background:rgba(0,0,0,.4); border-radius:8px; padding:5px; }
+  #card-fire{ box-shadow:0 0 24px rgba(255,80,0,.35);} #card-fire.selected{ border-color:#ff5a00; box-shadow:0 0 34px #ff5a00;}
+  #card-water{ box-shadow:0 0 24px rgba(0,150,255,.35);} #card-water.selected{ border-color:#0096ff; box-shadow:0 0 34px #0096ff;}
+  #card-earth{ box-shadow:0 0 24px rgba(120,200,60,.35);} #card-earth.selected{ border-color:#7ac74f; box-shadow:0 0 34px #7ac74f;}
+  #card-air{ box-shadow:0 0 24px rgba(180,230,255,.4);} #card-air.selected{ border-color:#bfe9ff; box-shadow:0 0 34px #bfe9ff;}
+  #start-btn { font-size:20px; font-weight:800; color:#fff; border:none; border-radius:16px; padding:14px 54px; cursor:pointer; background:linear-gradient(135deg,#ff5a00,#ff0055,#7c3aed,#0096ff); background-size:200% 200%; animation:grad 3s ease infinite; box-shadow:0 8px 30px rgba(255,60,0,.5); }
+  @keyframes grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+  #help { color:#8fa0c2; font-size:12.5px; margin-top:12px; line-height:2; max-width:600px; }
+  /* ---------- HUD ---------- */
+  #hud { position:fixed; inset:0; z-index:10; pointer-events:none; display:none; }
+  #top-bar { position:absolute; top:calc(8px + env(safe-area-inset-top)); right:8px; left:8px; display:flex; gap:8px; align-items:stretch; justify-content:space-between; }
+  .hud-box { background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:7px 10px; color:#fff; font-size:13px; min-width:0; backdrop-filter:blur(6px); }
+  #hp-wrap{ flex:1; }
+  #hp-bar-bg{ height:10px; background:#222; border-radius:6px; overflow:hidden; margin-top:5px; }
+  #hp-bar{ height:100%; width:100%; background:linear-gradient(90deg,#22ff88,#aaff00); border-radius:6px; transition:width .2s; }
+  #nitro-bar-bg{ height:7px; background:#222; border-radius:6px; overflow:hidden; margin-top:5px; }
+  #nitro-bar{ height:100%; width:100%; background:linear-gradient(90deg,#00d4ff,#7c3aed); }
+  #timer{ font-weight:800; font-size:18px; text-align:center; min-width:86px; }
+  #scores{ display:flex; gap:6px; justify-content:center; margin-top:4px; font-size:11px; }
+  .dot{ width:10px;height:10px;border-radius:50%;display:inline-block;margin-left:3px;vertical-align:middle;}
+  /* ability cooldown */
+  #ability-info{ position:absolute; bottom:calc(108px + env(safe-area-inset-bottom)); right:12px; text-align:center; color:#fff; font-size:11px; }
+  #cd-ring{ width:74px;height:74px;border-radius:50%; display:flex;align-items:center;justify-content:center; font-size:30px; background:rgba(0,0,0,.55); border:3px solid #fff3; margin:0 auto 4px; overflow:hidden; position:relative; }
+  #cd-fill{ position:absolute; bottom:0;left:0;right:0; background:rgba(255,255,255,.25); height:0%; }
+  /* ---------- Touch controls ---------- */
+  #touch-ui{ position:fixed; inset:0; z-index:11; pointer-events:none; display:none; }
+  #joy-zone{ position:absolute; bottom:calc(18px + env(safe-area-inset-bottom)); left:14px; width:132px; height:132px; border-radius:50%; background:rgba(255,255,255,.08); border:2px solid rgba(255,255,255,.25); pointer-events:auto; }
+  #joy-knob{ position:absolute; width:58px;height:58px; border-radius:50%; background:rgba(255,255,255,.85); left:37px; top:37px; box-shadow:0 4px 14px rgba(0,0,0,.5); }
+  #btns{ position:absolute; bottom:calc(18px + env(safe-area-inset-bottom)); right:12px; display:flex; gap:10px; align-items:flex-end; pointer-events:auto; }
+  .tbtn{ width:72px;height:72px;border-radius:50%; border:3px solid rgba(255,255,255,.4); font-size:28px; color:#fff; display:flex;align-items:center;justify-content:center; cursor:pointer; box-shadow:0 6px 20px rgba(0,0,0,.5); }
+  .tbtn:active{ transform:scale(.92); filter:brightness(1.3); }
+  #btn-power{ width:86px;height:86px; font-size:36px; background:linear-gradient(135deg,#ff6a00,#ff0055); }
+  #btn-nitro{ background:linear-gradient(135deg,#0096ff,#7c3aed); font-size:24px; }
+  #btn-cam{ width:52px;height:52px; font-size:22px; background:rgba(0,0,0,.55); }
+  /* desktop keys hint */
+  #keys-hint{ position:absolute; bottom:10px; left:50%; transform:translateX(-50%); color:#ffffff90; font-size:12px; background:rgba(0,0,0,.4); padding:6px 14px; border-radius:10px; white-space:nowrap; }
+  /* kill feed */
+  #feed{ position:absolute; top:calc(76px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .feed-msg{ background:rgba(0,0,0,.65); color:#fff; padding:6px 16px; border-radius:20px; font-size:13px; animation:pop .3s ease; border:1px solid rgba(255,255,255,.2); }
+  @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+  /* game over */
+  #over{ background:rgba(3,6,18,.82); backdrop-filter:blur(10px); display:none; z-index:30; }
+  #over h2{ color:#fff; font-size:clamp(28px,7vw,54px); margin-bottom:8px; }
+  #over p{ color:#cbd5e1; margin-bottom:14px; line-height:2; }
+  #again-btn{ font-size:18px; font-weight:800; color:#071018; background:#fff; border:none; border-radius:14px; padding:12px 44px; cursor:pointer; }
+  #damage-flash{ position:fixed; inset:0; z-index:9; pointer-events:none; background:radial-gradient(ellipse at center, transparent 40%, rgba(255,0,0,.55) 100%); opacity:0; transition:opacity .1s; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+<div id="damage-flash"></div>
+
+<!-- القائمة -->
+<div id="menu" class="screen">
+  <h1>🚗 سيارات العناصر ⚡</h1>
+  <p class="sub">اختار سيارتك — كل عنصر عندو قوة خارقة مختلفة! 🔥💧🪨🌪️<br>حارب 3 سيارات ذكية في حلبة 3D — البقاء للأقوى!</p>
+  <div id="cars-grid">
+    <div class="car-card" id="card-fire" data-el="fire">
+      <div class="emoji">🔥</div><h3>سيارة النار</h3>
+      <small>سريعة وهجومية. تحرق كلشي قدامها</small>
+      <div class="power">⚡ كرات نارية + انفجار حارق</div>
+    </div>
+    <div class="car-card" id="card-water" data-el="water">
+      <div class="emoji">💧</div><h3>سيارة الماء</h3>
+      <small>دفاعية وتعالج راسها. صعيب تقتلها</small>
+      <div class="power">⚡ درع مائي + موجة شفاء</div>
+    </div>
+    <div class="car-card" id="card-earth" data-el="earth">
+      <div class="emoji">🪨</div><h3>سيارة الأرض</h3>
+      <small>قوية وثقيلة. زلزال يدمر القريبين</small>
+      <div class="power">⚡ زلزال صخري + صدمة أرضية</div>
+    </div>
+    <div class="car-card" id="card-air" data-el="air">
+      <div class="emoji">🌪️</div><h3>سيارة الهواء</h3>
+      <small>خفيفة وسريعة بزاف. تورنادو مرعب</small>
+      <div class="power">⚡ داش تورنادو + قفزة هوائية</div>
+    </div>
+  </div>
+  <button id="start-btn">▶️ دخول الحلبة</button>
+  <div id="help">📱 <b>الهاتف:</b> عصا التحكم يسار + زر ⚡ للقدرة + زر 🚀 للنيترو<br>💻 <b>الحاسوب:</b> WASD / الأسهم للقيادة + مسافة للقدرة + Shift للنيترو + C للكاميرا</div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="top-bar">
+    <div class="hud-box" id="hp-wrap">❤️ <span id="hp-num">100</span>
+      <div id="hp-bar-bg"><div id="hp-bar"></div></div>
+      <div id="nitro-bar-bg"><div id="nitro-bar"></div></div>
+    </div>
+    <div class="hud-box" id="timer">⏱️ <span id="time-num">90</span><div id="scores"></div></div>
+    <div class="hud-box" id="kills">🏆 <span id="kill-num">0</span> قتلى</div>
+  </div>
+  <div id="feed"></div>
+  <div id="ability-info"><div id="cd-ring"><div id="cd-fill"></div><span id="cd-emoji">⚡</span></div><span id="cd-text">جاهزة!</span></div>
+  <div id="keys-hint">WASD قيادة • مسافة قدرة • Shift نيترو</div>
+</div>
+
+<div id="touch-ui">
+  <div id="joy-zone"><div id="joy-knob"></div></div>
+  <div id="btns">
+    <div class="tbtn" id="btn-cam">🎥</div>
+    <div class="tbtn" id="btn-nitro">🚀</div>
+    <div class="tbtn" id="btn-power">⚡</div>
+  </div>
+</div>
+
+<div id="over" class="screen">
+  <h2 id="over-title">🏆 فزتي!</h2>
+  <p id="over-desc"></p>
+  <button id="again-btn">🔄 العب مرة أخرى</button>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ================= الإعدادات ================= */
+const ELEMENTS = {
+  fire:  { name:'النار', emoji:'🔥', color:0xff4400, glow:0xff2200, speed:26, hp:90,  power:'كرات نارية', cd:5 },
+  water: { name:'الماء', emoji:'💧', color:0x0096ff, glow:0x00ddff, speed:23, hp:130, power:'درع مائي', cd:8 },
+  earth: { name:'الأرض', emoji:'🪨', color:0x7ac74f, glow:0x4a8c2a, speed:21, hp:150, power:'زلزال صخري', cd:9 },
+  air:   { name:'الهواء', emoji:'🌪️', color:0xcfefff, glow:0x88ddff, speed:29, hp:85,  power:'داش تورنادو', cd:6 },
+};
+let playerElement = 'fire';
+const ARENA_R = 55;
+const GAME_TIME = 120;
+
+/* ================= اختيار السيارة ================= */
+document.querySelectorAll('.car-card').forEach(c=>{
+  c.addEventListener('click', ()=>{
+    document.querySelectorAll('.car-card').forEach(x=>x.classList.remove('selected'));
+    c.classList.add('selected');
+    playerElement = c.dataset.el;
+    document.getElementById('cd-emoji').textContent = ELEMENTS[playerElement].emoji;
+    blip(500 + Math.random()*300);
+  });
+});
+document.getElementById('card-fire').classList.add('selected');
+
+/* ================= الصوت (بدون ملفات) ================= */
+let AC=null;
+function audio(){ if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended')AC.resume(); return AC; }
+function blip(f=600,d=0.12,type='square',v=0.08){ try{ const a=audio(),o=a.createOscillator(),g=a.createGain(); o.type=type;o.frequency.value=f; g.gain.value=v; o.connect(g);g.connect(a.destination); o.start(); g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d); o.stop(a.currentTime+d);}catch(e){} }
+function boom(){ blip(90,0.4,'sawtooth',0.2); blip(50,0.5,'square',0.15); }
+
+/* ================= Three.js ================= */
+const canvas = document.getElementById('game-canvas');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled = true;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x070b18);
+scene.fog = new THREE.Fog(0x070b18, 90, 220);
+const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.1, 500);
+addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+
+// إضاءة
+scene.add(new THREE.HemisphereLight(0x8fb8ff, 0x1a1030, 0.9));
+const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+sun.position.set(40,70,20); sun.castShadow=true;
+sun.shadow.camera.left=-80; sun.shadow.camera.right=80; sun.shadow.camera.top=80; sun.shadow.camera.bottom=-80;
+scene.add(sun);
+
+// أرض الحلبة
+const groundGeo = new THREE.CircleGeometry(ARENA_R+8, 64);
+const groundMat = new THREE.MeshStandardMaterial({color:0x16213e, roughness:0.9, metalness:0.1});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+// شبكة مضيئة
+const grid = new THREE.GridHelper(ARENA_R*2+10, 28, 0x00e5ff, 0x2a3a6a);
+grid.position.y = 0.02; grid.material.transparent=true; grid.material.opacity=0.35; scene.add(grid);
+// حافة الحلبة (جدار ناري)
+const wallGeo = new THREE.TorusGeometry(ARENA_R+2, 1.2, 12, 80);
+const wallMat = new THREE.MeshBasicMaterial({color:0xff3366});
+const wall = new THREE.Mesh(wallGeo, wallMat);
+wall.rotation.x = Math.PI/2; wall.position.y = 1.2; scene.add(wall);
+// أعمدة طاقة حول الحلبة
+for(let i=0;i<12;i++){
+  const a = i/12*Math.PI*2;
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.9,9,8), new THREE.MeshStandardMaterial({color:0x223, emissive:new THREE.Color().setHSL(i/12,0.9,0.5)}));
+  p.position.set(Math.cos(a)*(ARENA_R+6), 4.5, Math.sin(a)*(ARENA_R+6)); scene.add(p);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(1.1,12,12), new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(i/12,1,0.6)}));
+  tip.position.set(p.position.x, 9.5, p.position.z); scene.add(tip);
+}
+// نجوم
+{
+  const g = new THREE.BufferGeometry(); const pts=[];
+  for(let i=0;i<600;i++){ const r=180+Math.random()*120, t=Math.random()*Math.PI*2, y=Math.random()*120+10; pts.push(Math.cos(t)*r, y, Math.sin(t)*r); }
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({color:0xffffff,size:0.9})));
+}
+
+/* ================= بناء السيارات ================= */
+function buildCarMesh(el){
+  const E = ELEMENTS[el];
+  const grp = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({color:E.color, roughness:0.35, metalness:0.6, emissive:E.glow, emissiveIntensity:0.25});
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.2,0.7,4.2), bodyMat);
+  body.position.y=0.85; body.castShadow=true; grp.add(body);
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.65,1.8), new THREE.MeshStandardMaterial({color:0x0b1226, roughness:0.1, metalness:0.9}));
+  cabin.position.set(0,1.45,-0.2); cabin.castShadow=true; grp.add(cabin);
+  // جناح
+  const wing = new THREE.Mesh(new THREE.BoxGeometry(2.4,0.15,0.6), bodyMat);
+  wing.position.set(0,1.6,-2); grp.add(wing);
+  // عجلات
+  const wg = new THREE.CylinderGeometry(0.55,0.55,0.5,14);
+  const wm = new THREE.MeshStandardMaterial({color:0x111111, roughness:0.8});
+  [[-1.2,1.3],[1.2,1.3],[-1.2,-1.3],[1.2,-1.3]].forEach(([x,z])=>{
+    const w = new THREE.Mesh(wg,wm); w.rotation.z=Math.PI/2; w.position.set(x,0.55,z); w.castShadow=true; grp.add(w);
+  });
+  // هالة العنصر تحت السيارة
+  const halo = new THREE.Mesh(new THREE.CircleGeometry(2.2,24), new THREE.MeshBasicMaterial({color:E.glow, transparent:true, opacity:0.35}));
+  halo.rotation.x=-Math.PI/2; halo.position.y=0.05; grp.add(halo);
+  grp.userData.halo = halo;
+  // شريط الصحة فوق السيارة
+  const hpBg = new THREE.Mesh(new THREE.PlaneGeometry(3,0.4), new THREE.MeshBasicMaterial({color:0x220000, transparent:true, opacity:0.9}));
+  hpBg.position.y=3; grp.add(hpBg);
+  const hpFg = new THREE.Mesh(new THREE.PlaneGeometry(3,0.4), new THREE.MeshBasicMaterial({color:0x22ff66}));
+  hpFg.position.set(0,3,0.01); grp.add(hpFg);
+  grp.userData.hpBg=hpBg; grp.userData.hpFg=hpFg;
+  // درع الماء
+  if(el==='water'||true){
+    const sh = new THREE.Mesh(new THREE.SphereGeometry(2.6,16,16), new THREE.MeshBasicMaterial({color:0x00ccff, transparent:true, opacity:0}));
+    sh.position.y=1; grp.add(sh); grp.userData.shield=sh;
+  }
+  return grp;
+}
+
+/* ================= حالة اللعبة ================= */
+let cars=[], projectiles=[], particles=[], pickups=[];
+let gameOn=false, timeLeft=GAME_TIME, camMode=0, kills=0;
+
+function spawnPickup(){
+  const kinds=[['❤️','hp'],['🚀','nitro'],['⭐','star']];
+  const [emoji,kind]=kinds[Math.floor(Math.random()*3)];
+  const cv=document.createElement('canvas'); cv.width=cv.height=64;
+  const cx=cv.getContext('2d'); cx.font='48px serif'; cx.textAlign='center'; cx.textBaseline='middle'; cx.fillText(emoji,32,34);
+  const tex=new THREE.CanvasTexture(cv);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(2,2), new THREE.MeshBasicMaterial({map:tex, transparent:true, side:THREE.DoubleSide}));
+  const a=Math.random()*Math.PI*2, r=Math.random()*(ARENA_R-12);
+  m.position.set(Math.cos(a)*r, 1.2, Math.sin(a)*r);
+  m.userData={kind, life:20};
+  scene.add(m); pickups.push(m);
+}
+
+function makeCar(el, isPlayer, idx){
+  const E=ELEMENTS[el];
+  const mesh=buildCarMesh(el);
+  const a=(idx/4)*Math.PI*2;
+  const car={ el, E, mesh, isPlayer,
+    pos:new THREE.Vector3(Math.cos(a)*25, 0, Math.sin(a)*25),
+    vel:new THREE.Vector3(), angle:a+Math.PI,
+    hp:E.hp, maxHp:E.hp, nitro:100, cd:0, shieldT:0, slowT:0, burnT:0,
+    alive:true, aiT:0, aiSteer:0, kills:0 };
+  mesh.position.copy(car.pos);
+  scene.add(mesh); cars.push(car); return car;
+}
+
+function explodeFX(p, color, n=26, spd=14){
+  for(let i=0;i<n;i++){
+    const s=new THREE.Mesh(new THREE.SphereGeometry(0.28,6,6), new THREE.MeshBasicMaterial({color}));
+    s.position.copy(p).add(new THREE.Vector3(0,1,0));
+    const v=new THREE.Vector3((Math.random()-0.5)*spd, Math.random()*spd*0.8, (Math.random()-0.5)*spd);
+    particles.push({m:s, v, life:0.7+Math.random()*0.5});
+    scene.add(s);
+  }
+}
+
+function feed(msg){ const d=document.createElement('div'); d.className='feed-msg'; d.textContent=msg; document.getElementById('feed').appendChild(d); setTimeout(()=>d.remove(),2600); }
+function flashDmg(){ const f=document.getElementById('damage-flash'); f.style.opacity=1; setTimeout(()=>f.style.opacity=0,150); }
+
+function damage(target, amt, attacker){
+  if(!gameOn||!target.alive) return;
+  if(target.shieldT>0){ amt*=0.25; }
+  target.hp-=amt;
+  target.mesh.userData.hpFg.scale.x=Math.max(target.hp/target.maxHp,0);
+  target.mesh.userData.hpFg.position.x=-(3*(1-Math.max(target.hp/target.maxHp,0)))/2;
+  if(target.isPlayer){ flashDmg(); blip(180,0.2,'sawtooth',0.15); }
+  explodeFX(target.pos, 0xffaa00, 8, 8);
+  if(target.hp<=0){
+    target.alive=false; target.hp=0;
+    explodeFX(target.pos, target.E.glow, 50, 22); explodeFX(target.pos, 0xffffff, 20, 16);
+    boom();
+    scene.remove(target.mesh);
+    if(attacker&&attacker!==target){ attacker.kills++; if(attacker.isPlayer){ kills++; document.getElementById('kill-num').textContent=kills; blip(880,0.3,'square',0.12);} }
+    feed(`${attacker?attacker.E.emoji+' سيارة '+attacker.E.name: '💥'} 💥 دمرت ${target.E.emoji} سيارة ${target.E.name}`);
+    checkEnd();
+  }
+}
+
+/* ---- قدرات العناصر ---- */
+function usePower(car){
+  if(!car.alive||car.cd>0||!gameOn) return;
+  car.cd=car.E.cd; blip(700,0.25,'square',0.12);
+  const dir=new THREE.Vector3(Math.sin(car.angle),0,Math.cos(car.angle));
+  if(car.el==='fire'){
+    for(let k=-1;k<=1;k++){
+      const m=new THREE.Mesh(new THREE.SphereGeometry(0.55,10,10), new THREE.MeshBasicMaterial({color:0xff5500}));
+      const a=car.angle+k*0.15;
+      m.position.copy(car.pos).add(new THREE.Vector3(Math.sin(a)*3,1.2,Math.cos(a)*3));
+      const v=new THREE.Vector3(Math.sin(a)*46,1,Math.cos(a)*46);
+      projectiles.push({m,v,life:2,owner:car,dmg:22,el:'fire'}); scene.add(m);
+    }
+    explodeFX(car.pos,0xff5500,16,10);
+    feed('🔥 كرات نارية!');
+  } else if(car.el==='water'){
+    car.shieldT=5; car.hp=Math.min(car.maxHp,car.hp+30);
+    car.mesh.userData.hpFg.scale.x=car.hp/car.maxHp;
+    car.mesh.userData.hpFg.position.x=-(3*(1-car.hp/car.maxHp))/2;
+    explodeFX(car.pos,0x00ccff,30,10);
+    feed('💧 درع مائي + شفاء!');
+  } else if(car.el==='earth'){
+    explodeFX(car.pos,0x8b5a2b,40,18); boom();
+    // حلقة صدمة
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(2,0.7,10,32), new THREE.MeshBasicMaterial({color:0xa06a30}));
+    ring.rotation.x=Math.PI/2; ring.position.copy(car.pos).add(new THREE.Vector3(0,0.6,0));
+    scene.add(ring); particles.push({m:ring,v:new THREE.Vector3(),life:0.6,grow:true});
+    cars.forEach(o=>{ if(o!==car&&o.alive&&o.pos.distanceTo(car.pos)<16){ damage(o,30,car); o.slowT=3; o.vel.multiplyScalar(0.3);} });
+    feed('🪨 زلزال صخري!');
+  } else if(car.el==='air'){
+    car.vel.add(dir.clone().multiplyScalar(38));
+    explodeFX(car.pos,0xbfe9ff,30,12);
+    // تورنادو يجرح القريبين
+    cars.forEach(o=>{ if(o!==car&&o.alive&&o.pos.distanceTo(car.pos)<10){ damage(o,18,car);} });
+    // قفزة
+    car.airT=0.8;
+    feed('🌪️ داش تورنادو!');
+  }
+}
+
+function checkEnd(){
+  const alive=cars.filter(c=>c.alive);
+  const player=cars.find(c=>c.isPlayer);
+  if(!player.alive){ endGame(false,'💥 تم تدمير سيارتك!'); }
+  else if(alive.length===1&&alive[0]===player){ endGame(true,'🏆 دمرتي كل السيارات!'); }
+  else if(timeLeft<=0){
+    const best=[...cars].sort((a,b)=>b.hp-a.hp)[0];
+    endGame(best===player, best===player?'⏱️ انتهى الوقت وانت الأقوى!':`⏱️ انتهى الوقت! الفائز: ${best.E.emoji} سيارة ${best.E.name}`);
+  }
+}
+function endGame(win,msg){
+  if(!gameOn) return; gameOn=false;
+  document.getElementById('over').style.display='flex';
+  document.getElementById('over-title').textContent=win?'🏆 فزتي!':'💥 خسرتي!';
+  document.getElementById('over-desc').innerHTML=`${msg}<br>قتلى: <b>${kills}</b> | عنصرك: ${ELEMENTS[playerElement].emoji} ${ELEMENTS[playerElement].name}`;
+  win?blip(880,0.5,'square',0.15):blip(150,0.6,'sawtooth',0.15);
+}
+
+/* ================= بدء اللعبة ================= */
+document.getElementById('start-btn').addEventListener('click', ()=>{
+  audio();
+  document.getElementById('menu').style.display='none';
+  document.getElementById('hud').style.display='block';
+  const isTouch=('ontouchstart'in window)||navigator.maxTouchPoints>0;
+  if(isTouch) document.getElementById('touch-ui').style.display='block';
+  else document.getElementById('keys-hint').style.display='block';
+  if(!isTouch) document.getElementById('touch-ui').style.display='none';
+  if(isTouch) document.getElementById('keys-hint').style.display='none';
+  startMatch();
+});
+document.getElementById('again-btn').addEventListener('click', ()=>location.reload());
+
+function startMatch(){
+  // تنظيف
+  cars.forEach(c=>scene.remove(c.mesh)); cars=[];
+  projectiles.forEach(p=>scene.remove(p.m)); projectiles=[];
+  pickups.forEach(p=>scene.remove(p)); pickups=[];
+  timeLeft=GAME_TIME; kills=0; gameOn=true;
+  document.getElementById('over').style.display='none';
+  document.getElementById('kill-num').textContent='0';
+  const els=['fire','water','earth','air'];
+  const others=els.filter(e=>e!==playerElement);
+  makeCar(playerElement,true,0);
+  others.forEach((e,i)=>makeCar(e,false,i+1));
+  for(let i=0;i<5;i++) spawnPickup();
+  feed(`⚔️ بدأت المعركة! انت ${ELEMENTS[playerElement].emoji} ${ELEMENTS[playerElement].name}`);
+  // scores
+  const sc=document.getElementById('scores');
+  sc.innerHTML=cars.map(c=>`<span><span class="dot" style="background:#${c.E.color.toString(16).padStart(6,'0')}"></span>${c.E.emoji}</span>`).join(' ');
+}
+
+/* ================= التحكم ================= */
+const keys={};
+addEventListener('keydown',e=>{ keys[e.code]=true; if(e.code==='Space'){e.preventDefault(); const p=cars.find(c=>c.isPlayer); if(p)usePower(p);} if(e.code==='KeyC')camMode=(camMode+1)%3; });
+addEventListener('keyup',e=>keys[e.code]=false);
+// joystick
+let joy={x:0,y:0}; let nitroTouch=false;
+const zone=document.getElementById('joy-zone'), knob=document.getElementById('joy-knob');
+let joyId=null;
+function joyMove(t){
+  const r=zone.getBoundingClientRect();
+  let dx=t.clientX-(r.left+r.width/2), dy=t.clientY-(r.top+r.height/2);
+  const max=44; const d=Math.hypot(dx,dy);
+  if(d>max){dx*=max/d;dy*=max/d;}
+  knob.style.left=(37+dx)+'px'; knob.style.top=(37+dy)+'px';
+  joy.x=dx/max; joy.y=-dy/max;
+}
+zone.addEventListener('touchstart',e=>{e.preventDefault(); joyId=e.changedTouches[0].identifier; joyMove(e.changedTouches[0]);},{passive:false});
+addEventListener('touchmove',e=>{ for(const t of e.changedTouches) if(t.identifier===joyId) joyMove(t); },{passive:false});
+addEventListener('touchend',e=>{ for(const t of e.changedTouches) if(t.identifier===joyId){joyId=null;joy={x:0,y:0};knob.style.left='37px';knob.style.top='37px';} });
+document.getElementById('btn-power').addEventListener('touchstart',e=>{e.preventDefault(); const p=cars.find(c=>c.isPlayer); if(p)usePower(p);},{passive:false});
+document.getElementById('btn-power').addEventListener('click',()=>{const p=cars.find(c=>c.isPlayer); if(p)usePower(p);});
+document.getElementById('btn-nitro').addEventListener('touchstart',e=>{e.preventDefault(); nitroTouch=true;},{passive:false});
+document.getElementById('btn-nitro').addEventListener('touchend',()=>nitroTouch=false);
+document.getElementById('btn-nitro').addEventListener('mousedown',()=>nitroTouch=true);
+document.getElementById('btn-nitro').addEventListener('mouseup',()=>nitroTouch=false);
+document.getElementById('btn-cam').addEventListener('click',()=>camMode=(camMode+1)%3);
+document.getElementById('btn-cam').addEventListener('touchstart',e=>{e.preventDefault();camMode=(camMode+1)%3;},{passive:false});
+
+/* ================= الحلقة ================= */
+const clock=new THREE.Clock();
+let pickupT=4;
+function update(dt){
+  if(!gameOn) return;
+  timeLeft-=dt;
+  document.getElementById('time-num').textContent=Math.max(0,Math.ceil(timeLeft));
+  if(timeLeft<=0){ checkEnd(); }
+  pickupT-=dt; if(pickupT<0){pickupT=6; if(pickups.length<7)spawnPickup();}
+
+  const player=cars.find(c=>c.isPlayer);
+  cars.forEach(car=>{
+    if(!car.alive) return;
+    // مؤقتات
+    car.cd=Math.max(0,car.cd-dt); car.shieldT=Math.max(0,car.shieldT-dt);
+    car.slowT=Math.max(0,car.slowT-dt); car.airT=Math.max(0,(car.airT||0)-dt);
+    if(car.burnT>0){car.burnT-=dt; damage(car,6*dt,null);}
+
+    let steer=0, throttle=0, wantNitro=false;
+    if(car.isPlayer){
+      if(keys['KeyW']||keys['ArrowUp'])throttle=1;
+      if(keys['KeyS']||keys['ArrowDown'])throttle=-0.6;
+      if(keys['KeyA']||keys['ArrowLeft'])steer=1;
+      if(keys['KeyD']||keys['ArrowRight'])steer=-1;
+      // joystick (y للأمام)
+      if(Math.abs(joy.y)>0.15)throttle=joy.y;
+      if(Math.abs(joy.x)>0.15)steer=-joy.x;
+      wantNitro=!!keys['ShiftLeft']||!!keys['ShiftRight']||nitroTouch;
+    } else {
+      // ذكاء اصطناعي بسيط: طارد أقرب عدو + تجنب الحافة
+      car.aiT-=dt;
+      if(car.aiT<=0){car.aiT=0.5+Math.random()*0.8; car.aiSteer=(Math.random()-0.5)*0.6;}
+      let best=null,bd=1e9;
+      cars.forEach(o=>{if(o!==car&&o.alive){const d=car.pos.distanceTo(o.pos); if(d<bd){bd=d;best=o;}}});
+      if(best){
+        const want=Math.atan2(best.pos.x-car.pos.x, best.pos.z-car.pos.z);
+        let diff=((want-car.angle+Math.PI*3)%(Math.PI*2))-Math.PI;
+        steer=-Math.max(-1,Math.min(1,diff*2))+car.aiSteer;
+        throttle=bd>6?1:0.5;
+        if(Math.random()<dt*0.35&&bd<20) usePower(car);
+        wantNitro=bd>18&&Math.random()<0.5;
+      }
+      // تجنب السقوط خارج الحلبة
+      const dc=Math.hypot(car.pos.x,car.pos.z);
+      if(dc>ARENA_R-6){ throttle=0.4; const toC=Math.atan2(-car.pos.x,-car.pos.z); let diff=((toC-car.angle+Math.PI*3)%(Math.PI*2))-Math.PI; steer=-Math.max(-1,Math.min(1,diff*2.5)); }
+    }
+
+    const maxSp=car.E.speed*(car.slowT>0?0.55:1)*(wantNitro&&car.nitro>0?1.6:1);
+    if(wantNitro&&car.nitro>0){car.nitro=Math.max(0,car.nitro-28*dt); if(Math.random()<0.5)explodeFX(car.pos,0x00d4ff,1,4);}
+    else car.nitro=Math.min(100,car.nitro+8*dt);
+    car.angle+=steer*2.4*dt*(throttle>=0?1:-1);
+    const dir=new THREE.Vector3(Math.sin(car.angle),0,Math.cos(car.angle));
+    const target=dir.multiplyScalar(throttle*maxSp);
+    car.vel.lerp(target,1-Math.pow(0.02,dt));
+    car.pos.add(car.vel.clone().multiplyScalar(dt));
+    // حدود الحلبة: ارتداد + ضرر خارج الحلبة
+    const dd=Math.hypot(car.pos.x,car.pos.z);
+    if(dd>ARENA_R+1){ car.pos.multiplyScalar((ARENA_R+1)/dd); car.vel.multiplyScalar(-0.4); damage(car,15*dt,null); }
+    // قفزة الهواء
+    const jumpY=car.airT>0?Math.sin((0.8-car.airT)/0.8*Math.PI)*3:0;
+    car.mesh.position.copy(car.pos); car.mesh.position.y=jumpY;
+    car.mesh.rotation.y=car.angle;
+    car.mesh.rotation.z=-steer*0.12;
+    car.mesh.userData.halo.material.opacity=0.3+Math.sin(performance.now()*0.005)*0.12;
+    car.mesh.userData.shield.material.opacity=car.shieldT>0?0.35:0;
+    // توجيه شريط الصحة للكاميرا
+    car.mesh.userData.hpBg.quaternion.copy(camera.quaternion);
+    car.mesh.userData.hpFg.quaternion.copy(camera.quaternion);
+    // التقاط العناصر
+    pickups.forEach((pk,idx)=>{
+      if(pk.position.distanceTo(car.mesh.position)<2.5){
+        if(pk.userData.kind==='hp')car.hp=Math.min(car.maxHp,car.hp+25);
+        if(pk.userData.kind==='nitro')car.nitro=100;
+        if(pk.userData.kind==='star'){car.cd=0;}
+        car.mesh.userData.hpFg.scale.x=car.hp/car.maxHp;
+        car.mesh.userData.hpFg.position.x=-(3*(1-car.hp/car.maxHp))/2;
+        explodeFX(car.pos,0xffffff,12,8); blip(900,0.15,'sine',0.1);
+        scene.remove(pk); pickups.splice(idx,1);
+      }
+    });
+  });
+
+  // مقذوفات
+  for(let i=projectiles.length-1;i>=0;i--){
+    const p=projectiles[i];
+    p.life-=dt; p.m.position.add(p.v.clone().multiplyScalar(dt));
+    p.m.material.color.setHSL(0.05+Math.random()*0.08,1,0.5);
+    explodeFX(p.m.position,0xff6600,1,2);
+    let hit=false;
+    cars.forEach(c=>{
+      if(c!==p.owner&&c.alive&&p.m.position.distanceToSquared(new THREE.Vector3(c.pos.x,1,c.pos.z))<5){
+        damage(c,p.dmg,p.owner); if(p.el==='fire')c.burnT=2; hit=true;
+      }
+    });
+    const dp=Math.hypot(p.m.position.x,p.m.position.z);
+    if(hit||p.life<=0||dp>ARENA_R+5){ explodeFX(p.m.position,0xff4400,10,8); scene.remove(p.m); projectiles.splice(i,1); }
+  }
+  // جزيئات
+  for(let i=particles.length-1;i>=0;i--){
+    const pt=particles[i]; pt.life-=dt;
+    if(pt.grow){ pt.m.scale.multiplyScalar(1+dt*8); pt.m.material.opacity=(pt.m.material.opacity??1)-dt*2; }
+    else { pt.v.y-=18*dt; pt.m.position.add(pt.v.clone().multiplyScalar(dt)); }
+    if(pt.life<=0){ scene.remove(pt.m); particles.splice(i,1); }
+  }
+  // pickups دوران
+  pickups.forEach(pk=>{ pk.rotation.y+=dt*2; pk.position.y=1.2+Math.sin(performance.now()*0.003)*0.25; pk.userData.life-=dt; if(pk.userData.life<0){scene.remove(pk); pickups.splice(pickups.indexOf(pk),1);} });
+  wallMat.color.setHSL((performance.now()*0.0002)%1,1,0.55);
+
+  // HUD
+  if(player&&player.alive){
+    document.getElementById('hp-num').textContent=Math.ceil(player.hp);
+    document.getElementById('hp-bar').style.width=(100*player.hp/player.maxHp)+'%';
+    document.getElementById('nitro-bar').style.width=player.nitro+'%';
+    const cdPct=player.cd>0?(player.cd/player.E.cd*100):0;
+    document.getElementById('cd-fill').style.height=cdPct+'%';
+    document.getElementById('cd-text').textContent=player.cd>0?Math.ceil(player.cd)+'s':'جاهزة!';
+  }
+
+  // كاميرا تتبع
+  if(player){
+    const back=new THREE.Vector3(Math.sin(player.angle),0,Math.cos(player.angle));
+    if(camMode===0){ // قريبة
+      const want=player.pos.clone().add(back.clone().multiplyScalar(-11)).add(new THREE.Vector3(0,6.5,0));
+      camera.position.lerp(want,1-Math.pow(0.001,dt));
+      camera.lookAt(player.pos.x,2,player.pos.z);
+    } else if(camMode===1){ // بعيدة
+      const want=player.pos.clone().add(back.clone().multiplyScalar(-20)).add(new THREE.Vector3(0,13,0));
+      camera.position.lerp(want,1-Math.pow(0.001,dt));
+      camera.lookAt(player.pos.x,1,player.pos.z);
+    } else { // علوية
+      camera.position.lerp(new THREE.Vector3(player.pos.x,46,player.pos.z+0.01),1-Math.pow(0.001,dt));
+      camera.lookAt(player.pos.x,0,player.pos.z);
+    }
+  }
+}
+function loop(){ requestAnimationFrame(loop); const dt=Math.min(clock.getDelta(),0.05); update(dt); renderer.render(scene,camera); }
+camera.position.set(0,30,-40); camera.lookAt(0,0,0);
+loop();
+</script>
+</body>
+</html>
