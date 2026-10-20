@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#050506" />
+  <meta name="description" content="الفيديو المرعب — لعبة رعب ثلاثية الأبعاد من الدارك ويب للهاتف واللوحي." />
+  <title>الفيديو المرعب — الدارك ويب</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23050608'/%3E%3Ccircle cx='32' cy='32' r='15' fill='none' stroke='%23e42a3c' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23e42a3c'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main id="app">
+    <canvas id="scene" aria-label="مشهد الغرفة ثلاثي الأبعاد"></canvas>
+
+    <div id="scanlines" aria-hidden="true"></div>
+    <div id="grain" aria-hidden="true"></div>
+    <div id="vignette" aria-hidden="true"></div>
+
+    <header id="hud-top">
+      <div class="rec"><span class="rec-dot"></span><span>REC</span><span id="hud-time">00:00</span></div>
+      <div class="hud-tag">DEEP&nbsp;WEB&nbsp;//&nbsp;0x7F</div>
+    </header>
+
+    <div id="crosshair" aria-hidden="true"></div>
+
+    <div id="subtitle" class="hidden" aria-live="polite">
+      <span class="subtitle-tag">LIVE TRANSMISSION</span>
+      <p id="subtitle-text"></p>
+    </div>
+
+    <div id="hint" class="hidden" aria-live="polite"><span id="hint-text"></span></div>
+
+    <div id="joystick" aria-hidden="true">
+      <div id="stick"></div>
+    </div>
+
+    <button id="interact" class="hidden" type="button">
+      <span id="interact-label">تفاعل</span>
+      <small id="interact-sub">التلفاز</small>
+    </button>
+
+    <div id="flash" aria-hidden="true"></div>
+    <div id="blackout" aria-hidden="true"></div>
+
+    <section id="title-screen" class="screen">
+      <div class="title-inner">
+        <p class="kicker">شريط مُستعاد من الشبكة المظلمة</p>
+        <h1 class="glitch" data-text="الفيديو المرعب">الفيديو المرعب</h1>
+        <p class="subtitle">ادخل الغرفة. شغّل الشريط. لا تنظر خلفك.</p>
+        <div class="warn">
+          <span class="warn-icon">!</span>
+          <p>سماعات الرأس مُستحسنة. اللعبة تحتوي على أصوات مفاجئة ووميض ضوء.</p>
+        </div>
+        <button id="start-btn" class="primary" type="button">ادخل الغرفة</button>
+        <p class="meta">لعبة ثلاثية الأبعاد • هاتف / لوحي</p>
+        <div class="controls-note">
+          <span><b>الهاتف:</b> عصا للحركة • اسحب للنظر • زر التفاعل</span>
+          <span><b>الحاسوب:</b> WASD للحركة • اسحب بالفأرة للنظر • E للتفاعل</span>
+        </div>
+      </div>
+      <p class="footer-note">هذه اللعبة خيالية بالكامل. لا يوجد أي اتصال حقيقي بشبكة مظلمة.</p>
+    </section>
+
+    <section id="end-screen" class="screen hidden">
+      <div class="end-inner">
+        <p id="end-kicker" class="kicker">انتهى البث</p>
+        <h2 id="end-title">نجوت… هذه المرة.</h2>
+        <p id="end-text">أغلقت الباب، لكن الشريط ما زال يعمل.</p>
+        <div class="end-stats">
+          <div><span>المدة</span><b id="stat-time">00:00</b></div>
+          <div><span>المشاهدات</span><b id="stat-views">1</b></div>
+        </div>
+        <button id="retry-btn" class="primary" type="button">أعد المحاولة</button>
+        <p class="meta">لا تشارك الرابط مع أحد.</p>
+      </div>
+    </section>
+
+    <div id="rotate-hint">
+      <span>أدر الجهاز أفقياً لتجربة أفضل</span>
+    </div>
+
+    <div id="fatal" class="hidden"></div>
+  </main>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
