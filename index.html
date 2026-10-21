@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#060708">
+  <meta name="description" content="الدار — لعبة رعب ثنائية الأبعاد داخل شريط فيديو قديم. للهاتف واللوحة.">
+  <title>الدار — الشريط المرعب</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23090a0b'/%3E%3Crect x='10' y='18' width='44' height='28' rx='3' fill='none' stroke='%23c8342c' stroke-width='3'/%3E%3Ccircle cx='22' cy='32' r='4' fill='%23c8342c'/%3E%3Ccircle cx='42' cy='32' r='4' fill='%23c8342c'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene" aria-label="مشهد اللعبة"></canvas>
+
+    <div class="fx scanlines" aria-hidden="true"></div>
+    <div class="fx grain" aria-hidden="true"></div>
+    <div class="fx vignette" aria-hidden="true"></div>
+    <div id="dangerVignette" class="fx danger-vignette" aria-hidden="true"></div>
+
+    <div id="hud" class="hud hidden" aria-live="polite">
+      <div class="hud-top">
+        <div class="tape-box">
+          <span class="tape-label">أجزاء الشريط</span>
+          <div class="tape-slots" id="tapeSlots">
+            <span class="tape-slot" data-tape="0"></span>
+            <span class="tape-slot" data-tape="1"></span>
+            <span class="tape-slot" data-tape="2"></span>
+          </div>
+        </div>
+        <div class="fear-box">
+          <span class="fear-label">الرعب</span>
+          <div class="fear-bar"><i id="fearFill"></i></div>
+          <div class="stamina-bar"><i id="staminaFill"></i></div>
+        </div>
+        <button id="pauseBtn" class="icon-btn" aria-label="إيقاف مؤقت">II</button>
+      </div>
+      <p class="objective" id="objective">ابحث عن أجزاء الشريط الثلاثة</p>
+      <p class="hint" id="hint"></p>
+      <div id="toast" class="toast"></div>
+
+      <div id="touchControls" class="touch-controls">
+        <div class="joystick" id="joystick" aria-label="عصا الحركة">
+          <span class="joy-ring"></span>
+          <span class="joy-stick" id="joyStick"></span>
+          <span class="joy-dot"></span>
+        </div>
+        <button id="sprintBtn" class="sprint-btn" aria-label="اجري">اجري</button>
+        <button id="actionBtn" class="action-btn hidden" aria-label="تفاعل">افتح الباب</button>
+      </div>
+      <div class="key-hint" id="keyHint">WASD / الأسهم للحركة · Shift للجري · E للتفاعل</div>
+    </div>
+
+    <section id="titleScreen" class="screen title-screen">
+      <div class="title-inner">
+        <p class="kicker"><span class="kicker-line"></span>شريط فيديو من دار مهجورة<span class="kicker-line"></span></p>
+        <h1 class="game-title" data-text="الدار">الدار</h1>
+        <p class="subtitle">ادخل للشريط… ولا تلتفت وراك</p>
+        <button id="startBtn" class="cta" aria-label="Play">
+          <span class="cta-icon" aria-hidden="true"></span>
+          شغّل الشريط
+        </button>
+        <p class="note">يُفضّل استعمال السماعات · يحتوي على وميض وأصوات مفاجئة</p>
+        <div class="how">
+          <span><b>تحرّك</b> عصا التحكم</span>
+          <span><b>اجري</b> زر الجري</span>
+          <span><b>تفاعل</b> زر الباب</span>
+        </div>
+      </div>
+      <div class="corner-mark">VHS · 1998</div>
+      <div class="corner-mark corner-mark-2">دار ٧ · الممر</div>
+    </section>
+
+    <section id="cutsceneUI" class="screen cutscene-ui hidden">
+      <div class="vhs-top">
+        <span class="rec"><i></i>REC</span>
+        <span id="timecode">00:00:00</span>
+        <span class="sp">SP</span>
+      </div>
+      <div class="vhs-bottom">
+        <span>PLAY</span>
+        <span class="vhs-bars" aria-hidden="true"></span>
+        <span>TRACKING</span>
+      </div>
+      <p id="subtitles" class="subtitles"></p>
+      <div class="cutscene-actions">
+        <button id="enterBtn" class="cta enter-btn hidden">ادخل للفيديو</button>
+        <button id="skipBtn" class="ghost-btn">تخطّي الفيديو</button>
+      </div>
+      <p class="cutscene-tip">المس الشاشة للاستماع فقط… لا تلمس الباب</p>
+    </section>
+
+    <section id="pauseScreen" class="screen dim-screen hidden">
+      <div class="panel">
+        <p class="panel-kicker">الشريط متوقف</p>
+        <h2>وقفة</h2>
+        <p class="panel-text">الدار كتسمعك حتى فالسكوت.</p>
+        <div class="panel-actions">
+          <button id="resumeBtn" class="cta">متابعة</button>
+          <button id="restartBtn" class="ghost-btn">من الأول</button>
+          <button id="soundBtn" class="ghost-btn">الصوت: عالي</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="overScreen" class="screen dim-screen hidden">
+      <div class="panel over">
+        <p class="panel-kicker">انتهى الشريط</p>
+        <h2 class="scare-title">شافتك</h2>
+        <p class="panel-text" id="overText">شي حاجة في الدار كانت واقفة وراك من الأول.</p>
+        <div class="panel-actions">
+          <button id="retryBtn" class="cta">أعد المحاولة</button>
+          <button id="homeBtn" class="ghost-btn">الرئيسية</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="winScreen" class="screen dim-screen hidden">
+      <div class="panel win">
+        <p class="panel-kicker">خرجت من الفيديو</p>
+        <h2>الباب تسدّ…</h2>
+        <p class="panel-text">الشمس طالعة، ولكن الشريط ما زال كيدور. سمعت صوتك أنت فيه.</p>
+        <p class="win-stats" id="winStats"></p>
+        <div class="panel-actions">
+          <button id="againBtn" class="cta">أعد الشريط</button>
+          <button id="homeBtn2" class="ghost-btn">الرئيسية</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
